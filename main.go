@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"db"
+	"router"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
@@ -84,7 +85,6 @@ func main() {
 		jwtSecret = []byte(s)
 	}
 
-	router := gin.Default()
 	database := db.NewClient()
 	if err := database.Connect(); err != nil {
 		panic(err)
@@ -96,82 +96,7 @@ func main() {
 	}()
 
 	// Public group
-	public := router.Group("/api")
-	{
-		public.POST("/register", func(c *gin.Context) {
-			var json struct {
-				Username string `json:"username" binding:"required"`
-				Password string `json:"password" binding:"required"`
-				Email    string `json:"email" binding:"required,email"`
-				Age      int    `json:"age" binding:"required,min=0"`
-			}
-			if err := c.ShouldBindJSON(&json); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
-			// TODO: hash password before storing
-			hashedPwd, err := hashPassword(json.Password)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "could not secure password"})
-				return
-			}
-			database.User.CreateOne(
-				db.User.Name.Set(json.Username),
-				db.User.Password.Set(hashedPwd), // ← store hash, not raw pwd
-				db.User.Email.Set(json.Email),
-				db.User.Age.Set(json.Age),
-			)
-			// Issue token immediately after registration:
-			token, err := generateToken(json.Username)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate token"})
-				return
-			}
-			c.JSON(http.StatusOK, gin.H{
-				"status": "registration successful",
-				"token":  token,
-			})
-		})
 
-		router.POST("/login", func(c *gin.Context) {
-			var creds struct {
-				Email    string `json:"email" binding:"required"`
-				Password string `json:"password" binding:"required"`
-			}
-			if err := c.ShouldBindJSON(&creds); err != nil {
-				c.JSON(400, gin.H{"error": err.Error()})
-				return
-			}
-
-			ctx := c.Request.Context()
-			user, err := database.User.FindUnique(
-				db.User.Email.Equals(creds.Email), // ← use Email, not Name
-			).Exec(ctx)
-			if err != nil || !checkPassword(user.Password, creds.Password) {
-				c.JSON(401, gin.H{"error": "invalid credentials"})
-				return
-			}
-
-			token, err := generateToken(user.Email)
-			if err != nil {
-				c.JSON(500, gin.H{"error": "could not generate token"})
-				return
-			}
-			c.JSON(200, gin.H{"token": token})
-		})
-	}
-
-	// Protected routes
-	protected := router.Group("/api")
-	protected.Use(jwtMiddleware())
-	{
-		protected.GET("/profile", func(c *gin.Context) {
-			username := c.GetString("username")
-			// Fetch user profile from DB...
-			c.JSON(http.StatusOK, gin.H{"message": "Welcome, " + username})
-		})
-		// add more protected endpoints here
-	}
-
-	router.Run() // default :8080
+	r := router.SetupRouter(database)
+	r.Run() // default :8080
 }
