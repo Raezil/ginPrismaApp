@@ -5,4 +5,5 @@ use (
 	./db
 	./router
 	./middlewares
+	./services
 )
