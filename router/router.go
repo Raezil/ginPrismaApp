@@ -34,6 +34,9 @@ func SetupRouter(database *db.PrismaClient) *gin.Engine {
 		// Apply stricter rate limiting to authentication endpoints
 		authRoutes := pub.Group("/")
 		authRoutes.Use(StrictRateLimitMiddleware(authLimiter))
+		pub.POST("/video/upload", func(c *gin.Context) {
+			streaming.UploadVideo(c)
+		})
 		{
 			authRoutes.POST("/register", func(c *gin.Context) {
 				var req struct {
@@ -109,9 +112,6 @@ func SetupRouter(database *db.PrismaClient) *gin.Engine {
 			streaming.Stream(c.Writer, c.Request)
 		})
 
-		prot.POST("/video/upload", func(c *gin.Context) {
-			streaming.UploadVideo(c)
-		})
 	}
 
 	return r
