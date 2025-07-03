@@ -78,8 +78,7 @@ func parseRange(rangeHeader string, fileSize int64) (int64, int64, error) {
 	return start, end, nil
 }
 
-func NewStreaming() *Streaming {
-	// Read MinIO credentials from environment variables
+func NewMinioClient() (*minio.Client, error) {
 	accessKey := os.Getenv("MINIO_ACCESS_KEY")
 	if accessKey == "" {
 		log.Fatalln("Missing MINIO_ACCESS_KEY environment variable")
@@ -95,6 +94,14 @@ func NewStreaming() *Streaming {
 	})
 	if err != nil {
 		log.Fatalln("Error initializing MinIO client:", err)
+	}
+	return minioClient, nil
+}
+func NewStreaming() *Streaming {
+	// Read MinIO credentials from environment variables
+	minioClient, err := NewMinioClient()
+	if err != nil {
+		log.Fatalf("Failed to create MinIO client: %v", err)
 	}
 	return &Streaming{
 		Client: minioClient,
