@@ -9,6 +9,7 @@ import (
 
 	"db"
 	. "middlewares"
+	. "services"
 )
 
 // SetupRouter initializes Gin engine with all routes and rate limiting.
@@ -26,7 +27,7 @@ func SetupRouter(database *db.PrismaClient) *gin.Engine {
 
 	// Apply general rate limiting to all routes
 	r.Use(RateLimitMiddleware(generalLimiter))
-
+	streaming := NewStreaming()
 	// Public routes
 	pub := r.Group("/api")
 	{
@@ -102,6 +103,10 @@ func SetupRouter(database *db.PrismaClient) *gin.Engine {
 		prot.GET("/profile", func(c *gin.Context) {
 			email := c.GetString("email")
 			c.JSON(http.StatusOK, gin.H{"message": "Welcome, " + email})
+		})
+
+		prot.GET("/video", func(c *gin.Context) {
+			streaming.Stream(c.Writer, c.Request)
 		})
 		// add more
 	}
