@@ -24,3 +24,11 @@ curl -X POST http://localhost:8080/api/login \
 curl -X GET http://localhost:8080/api/profile \
 -H "Authorization: Bearer $TOKEN"
 ```
+
+#### Upload
+
+```bash
+curl -X POST http://localhost:8080/api/video/upload \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -F "file=@/path/to/awesome_video.mp4;type=video/mp4"
+```
