@@ -15,6 +15,7 @@ import (
 func SetupRouter(database *db.PrismaClient) *gin.Engine {
 	r := gin.Default()
 
+	r.Use(LoggingMiddleware())
 	// Create rate limiters
 	generalLimiter := NewRateLimiter(rate.Every(time.Second), 10) // 10 requests per second
 	authLimiter := NewRateLimiter(rate.Every(time.Minute), 5)     // 5 requests per minute for auth
