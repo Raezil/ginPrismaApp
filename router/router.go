@@ -108,7 +108,10 @@ func SetupRouter(database *db.PrismaClient) *gin.Engine {
 		prot.GET("/video", func(c *gin.Context) {
 			streaming.Stream(c.Writer, c.Request)
 		})
-		// add more
+
+		prot.POST("/video/upload", func(c *gin.Context) {
+			streaming.UploadVideo(c)
+		})
 	}
 
 	return r
