@@ -107,6 +107,30 @@ func SetupRouter(database *db.PrismaClient) *gin.Engine {
 			email := c.GetString("email")
 			c.JSON(http.StatusOK, gin.H{"message": "Welcome, " + email})
 		})
+		prot.PUT("/profile", func(c *gin.Context) {
+			var req struct {
+				Username string `json:"username" binding:"required"`
+				Email    string `json:"email" binding:"required,email"`
+				Age      int    `json:"age" binding:"required,min=0"`
+			}
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			email := c.GetString("email")
+			_, err := database.User.UpsertOne(
+				db.User.Email.Equals(email),
+			).Update(
+				db.User.Name.Set(req.Username),
+				db.User.Email.Set(req.Email),
+				db.User.Age.Set(req.Age),
+			).Exec(c.Request.Context())
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "could not update profile"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"status": "profile updated"})
+		})
 
 		prot.GET("/video", func(c *gin.Context) {
 			streaming.Stream(c.Writer, c.Request)

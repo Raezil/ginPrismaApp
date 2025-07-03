@@ -3,10 +3,12 @@ package main
 import (
 	"db"
 	"router"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-
+	gin.SetMode(gin.ReleaseMode)
 	database := db.NewClient()
 	if err := database.Connect(); err != nil {
 		panic(err)
